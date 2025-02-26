@@ -41,6 +41,7 @@ class AnimationScreens extends StatefulWidget {
 class _AnimationScreensState extends State<AnimationScreens> {
   PageController _pageController = PageController();
   Color _textColor = Colors.black;
+  bool _showFrame = true;
 
   void _showColorPicker() {
     showDialog(
@@ -98,6 +99,15 @@ class _AnimationScreensState extends State<AnimationScreens> {
           FadingTextAnimation(
             duration: Duration(milliseconds: 500),
             textColor: _textColor,
+            curve: Curves.easeInOut,
+          ),
+          FramedImageAnimation(
+            showFrame: _showFrame,
+            onToggleFrame: (value) {
+              setState(() {
+                _showFrame = value;
+              });
+            },
           ),
         ],
       ),
@@ -108,10 +118,12 @@ class _AnimationScreensState extends State<AnimationScreens> {
 class FadingTextAnimation extends StatefulWidget {
   final Duration duration;
   final Color textColor;
+  final Curve? curve;
 
-  FadingTextAnimation({
+  const FadingTextAnimation({
     required this.duration,
     required this.textColor,
+    this.curve,
   });
 
   @override
@@ -133,27 +145,107 @@ class _FadingTextAnimationState extends State<FadingTextAnimation> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          AnimatedOpacity(
-            opacity: _isVisible ? 1.0 : 0.0,
-            duration: widget.duration,
-            child: Text(
-              'Hello, Flutter!',
-              style: TextStyle(fontSize: 24, color: widget.textColor),
+          GestureDetector(
+            onTap: toggleVisibility,
+            child: AnimatedOpacity(
+              opacity: _isVisible ? 1.0 : 0.0,
+              duration: widget.duration,
+              curve: widget.curve ?? Curves.linear,
+              child: const Text(
+                'Hello, Flutter!',
+                style: TextStyle(fontSize: 24),
+              ),
             ),
           ),
-          SizedBox(height: 20),
+          const SizedBox(height: 20),
           FloatingActionButton(
             onPressed: toggleVisibility,
-            child: Icon(Icons.play_arrow),
+            child: const Icon(Icons.play_arrow),
           ),
-          SizedBox(height: 20),
+          const SizedBox(height: 20),
           Text(
             'Duration: ${widget.duration.inMilliseconds}ms',
             style: TextStyle(color: widget.textColor),
           ),
-          SizedBox(height: 40),
-          Text('Swipe left or right to change animation duration',
-              style: TextStyle(fontSize: 14, color: Colors.grey)),
+          const SizedBox(height: 40),
+          const Text(
+            'Swipe left or right to change animation',
+            style: TextStyle(fontSize: 14, color: Colors.grey),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class FramedImageAnimation extends StatelessWidget {
+  final bool showFrame;
+  final Function(bool) onToggleFrame;
+
+  const FramedImageAnimation({
+    required this.showFrame,
+    required this.onToggleFrame,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 250,
+            height: 250,
+            decoration: showFrame
+                ? BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: Colors.blue,
+                      width: 8,
+                    ),
+                  )
+                : null,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(showFrame ? 12 : 0),
+              child: Image.network(
+                'https://picsum.photos/id/237/200/300',
+                fit: BoxFit.cover,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Center(
+                    child: CircularProgressIndicator(
+                      value: loadingProgress.expectedTotalBytes != null
+                          ? loadingProgress.cumulativeBytesLoaded / 
+                            loadingProgress.expectedTotalBytes!
+                          : null,
+                    ),
+                  );
+                },
+                errorBuilder: (context, error, stackTrace) {
+                  return const Center(
+                    child: Text('Could not load image', 
+                      style: TextStyle(color: Colors.red)),
+                  );
+                },
+              ),
+            ),
+          ),
+          const SizedBox(height: 30),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text('Show Frame'),
+              Switch(
+                value: showFrame,
+                onChanged: onToggleFrame,
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          const Text(
+            'Swipe left or right to see more animations',
+            style: TextStyle(fontSize: 14, color: Colors.grey),
+          ),
         ],
       ),
     );
